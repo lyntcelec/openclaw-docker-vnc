@@ -95,9 +95,84 @@ The volume mount persists OpenClaw configuration (`openclaw.json`) and workspace
 4. `start.sh` waits for the `openclaw` binary and config file (`~/.openclaw/openclaw.json`) to be available, then starts the gateway
 5. A Chrome wrapper script is included that routes Chrome to the virtual display (`:1`)
 
-### Setup
+## Setup Guide
 
-On first run, you need to install the OpenClaw binary and run `openclaw setup` inside the container to generate the configuration file. The gateway will start automatically once both are available.
+### Access the container
+
+```bash
+docker exec -it openclaw bash
+```
+
+### Install OpenClaw
+
+```bash
+curl -fsSL https://openclaw.ai/install.sh | bash
+```
+
+Then run `openclaw setup` to generate the configuration file. The gateway will start automatically once both the binary and config file are available.
+
+### Set up Tailscale (optional)
+
+If you enabled Tailscale, authenticate from inside the container:
+
+```bash
+tailscale up
+```
+
+After logging in, Tailscale will assign an IP address (e.g. `100.93.141.81`). Access the services at:
+
+| Service | URL |
+|---------|-----|
+| noVNC web client | `http://100.93.141.81/` |
+| OpenClaw Web UI | `http://100.93.141.81:18789` |
+
+### Configure `openclaw.json`
+
+#### Gateway configuration
+
+Add the following to allow external access:
+
+```json
+{
+  "bind": "lan",
+  "controlUi": {
+    "enabled": true,
+    "allowedOrigins": [
+      "http://localhost:18789",
+      "http://100.93.141.81:18789"
+    ],
+    "allowInsecureAuth": true,
+    "dangerouslyDisableDeviceAuth": true
+  }
+}
+```
+
+> **Note:** Replace `100.93.141.81` with your actual Tailscale IP.
+
+#### Browser configuration
+
+Add the following to enable browser capabilities for OpenClaw:
+
+```json
+{
+  "browser": {
+    "enabled": true,
+    "executablePath": "/usr/local/bin/chrome-wrapper",
+    "headless": false,
+    "noSandbox": true,
+    "defaultProfile": "openclaw",
+    "ssrfPolicy": {
+      "dangerouslyAllowPrivateNetwork": true
+    },
+    "profiles": {
+      "openclaw": {
+        "cdpPort": 18800,
+        "color": "#FF4500"
+      }
+    }
+  }
+}
+```
 
 ## Logs
 
