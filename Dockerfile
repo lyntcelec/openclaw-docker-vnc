@@ -15,9 +15,9 @@ RUN chmod +x /usr/local/bin/start.sh
 COPY openclaw-gateway.conf /tmp/openclaw-gateway.conf
 RUN cat /tmp/openclaw-gateway.conf >> /etc/supervisor/conf.d/supervisord.conf && rm /tmp/openclaw-gateway.conf
 
-COPY x11vnc-wrapper.sh /usr/local/bin/x11vnc-wrapper.sh
-RUN chmod +x /usr/local/bin/x11vnc-wrapper.sh && \
-    sed -i 's|command=x11vnc -display :1 -xkb -forever -shared -repeat -capslock|command=/usr/local/bin/x11vnc-wrapper.sh|' /etc/supervisor/conf.d/supervisord.conf
+COPY xvfb-wrapper.sh /usr/local/bin/xvfb-wrapper.sh
+RUN chmod +x /usr/local/bin/xvfb-wrapper.sh && \
+    sed -i 's|command=/usr/local/bin/xvfb.sh|command=/usr/local/bin/xvfb-wrapper.sh|' /etc/supervisor/conf.d/supervisord.conf
 
 RUN printf '#!/bin/bash\nexport DISPLAY=:1\nexec /usr/bin/google-chrome "$@"\n' > /usr/local/bin/chrome-wrapper && \
     chmod +x /usr/local/bin/chrome-wrapper
