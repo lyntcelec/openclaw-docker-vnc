@@ -9,6 +9,7 @@ A Docker image that packages [OpenClaw](https://github.com/lyntcelec/openclaw-do
 - OpenClaw Gateway auto-starts via Supervisor
 - Google Chrome available on the virtual display
 - GPU passthrough support
+- Built-in [Tailscale](https://tailscale.com/) for secure remote access without exposing ports
 
 ## Quick Start
 
@@ -19,6 +20,33 @@ docker build -t openclaw-vnc .
 ```
 
 ### Run the container
+
+#### With Tailscale (recommended)
+
+If you use Tailscale, you don't need to expose any ports — access the container via its Tailscale IP instead.
+
+```bash
+docker run --name openclaw \
+  --restart=unless-stopped \
+  --add-host host.docker.internal:host-gateway \
+  -e VNC_PASSWORD=1234567890 \
+  -e RESOLUTION=1280x720 \
+  -w /root/.openclaw \
+  -it \
+  -v /root/openclaw/docker_data:/root/.openclaw \
+  --gpus all \
+  openclaw-vnc
+```
+
+After the container starts, authenticate Tailscale:
+
+```bash
+docker exec openclaw tailscale up
+```
+
+Then access the services via the container's Tailscale IP (e.g. `http://<tailscale-ip>/` for noVNC).
+
+#### Without Tailscale
 
 ```bash
 docker run --name openclaw \
@@ -62,9 +90,10 @@ The volume mount persists OpenClaw configuration (`openclaw.json`) and workspace
 ## How It Works
 
 1. The container starts an Ubuntu LXDE desktop with a VNC server (from the base image [dorowu/ubuntu-desktop-lxde-vnc](https://github.com/fcwu/docker-ubuntu-vnc-desktop))
-2. Supervisor manages the OpenClaw Gateway process via `start.sh`
-3. `start.sh` waits for the `openclaw` binary and config file (`~/.openclaw/openclaw.json`) to be available, then starts the gateway
-4. A Chrome wrapper script is included that routes Chrome to the virtual display (`:1`)
+2. Tailscale daemon (`tailscaled`) starts automatically via Supervisor in userspace-networking mode
+3. Supervisor manages the OpenClaw Gateway process via `start.sh`
+4. `start.sh` waits for the `openclaw` binary and config file (`~/.openclaw/openclaw.json`) to be available, then starts the gateway
+5. A Chrome wrapper script is included that routes Chrome to the virtual display (`:1`)
 
 ### Setup
 
@@ -72,10 +101,15 @@ On first run, you need to install the OpenClaw binary and run `openclaw setup` i
 
 ## Logs
 
-Supervisor logs for the OpenClaw Gateway can be found at:
+Supervisor logs can be found at:
 
+**OpenClaw Gateway:**
 - stdout: `/var/log/openclaw-gateway-0.log`
 - stderr: `/var/log/openclaw-gateway-0.err`
+
+**Tailscale:**
+- stdout: `/var/log/tailscaled.log`
+- stderr: `/var/log/tailscaled.err`
 
 ## License
 
